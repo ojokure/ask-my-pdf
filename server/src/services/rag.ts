@@ -10,12 +10,13 @@ class RAGService {
   private promptTemplate: PromptTemplate;
 
   constructor() {
-    if (!process.env.OPENAI_API_KEY) {
+    const apiKey = process.env.OPENAI_API_KEY?.trim();
+    if (!apiKey) {
       throw new Error('OPENAI_API_KEY is not set in environment variables');
     }
 
     this.llm = new ChatOpenAI({
-      openAIApiKey: process.env.OPENAI_API_KEY,
+      openAIApiKey: apiKey,
       modelName: 'gpt-3.5-turbo',
       temperature: 0.7,
     });

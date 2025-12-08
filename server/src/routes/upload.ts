@@ -22,7 +22,7 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   limits: {
-    fileSize: parseInt(process.env.MAX_FILE_SIZE || '10485760'), // 10MB default
+    fileSize: parseInt(process.env.MAX_FILE_SIZE || '10485760'),
   },
   fileFilter: (req, file, cb) => {
     const allowedTypes = (process.env.ALLOWED_FILE_TYPES || 'application/pdf').split(',');
@@ -40,12 +40,14 @@ router.post('/', upload.single('pdf'), async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
+    // console.log('File uploaded:', req.file);
     // Load and process PDF
     const text = await pdfLoader.loadPDF(req.file.path);
-    
+
+    // console.log('Text:', text);
     // Generate embeddings and store in vector store
     const documentId = await vectorStore.addDocument(text, req.file.filename);
-    
+    console.log('Document ID:', documentId);
     res.json({
       success: true,
       documentId,

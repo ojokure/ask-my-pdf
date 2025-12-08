@@ -7,12 +7,13 @@ class EmbeddingsService {
   private embeddings: OpenAIEmbeddings;
 
   constructor() {
-    if (!process.env.OPENAI_API_KEY) {
+    const apiKey = process.env.OPENAI_API_KEY?.trim();
+    if (!apiKey) {
       throw new Error('OPENAI_API_KEY is not set in environment variables');
     }
 
     this.embeddings = new OpenAIEmbeddings({
-      openAIApiKey: process.env.OPENAI_API_KEY,
+      openAIApiKey: apiKey,
       modelName: 'text-embedding-ada-002',
     });
   }
