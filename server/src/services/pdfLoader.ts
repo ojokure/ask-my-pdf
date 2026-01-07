@@ -1,14 +1,16 @@
 import pdfParse from 'pdf-parse';
 import fs from 'fs/promises';
+import { logger } from '../utils/logger';
 
 class PDFLoader {
   async loadPDF(filePath: string): Promise<string> {
     try {
       const dataBuffer = await fs.readFile(filePath);
       const data = await pdfParse(dataBuffer);
+      logger.debug('PDF loaded successfully', { filePath, textLength: data.text.length });
       return data.text;
     } catch (error) {
-      console.error('Error loading PDF:', error);
+      logger.error('Error loading PDF', { error, filePath });
       throw new Error('Failed to load PDF file');
     }
   }
@@ -43,12 +45,12 @@ class PDFLoader {
       
       // Prevent infinite loop - if we're not making progress, break
       if (chunks.length > 50000) { // Safety limit (reduced but still safe)
-        console.warn(`Chunking limit reached at ${chunks.length} chunks. PDF is very large.`);
+        logger.warn('Chunking limit reached', { chunksCount: chunks.length, textLength });
         break;
       }
     }
 
-    console.log(`Created ${chunks.length} chunks from PDF (text length: ${textLength} characters)`);
+    logger.info('Text chunked successfully', { chunksCount: chunks.length, textLength });
     return chunks;
   }
 }

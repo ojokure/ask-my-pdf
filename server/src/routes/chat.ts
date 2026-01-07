@@ -1,5 +1,10 @@
 import { Router, Request, Response } from 'express';
 import { ragService } from '../services/rag';
+import { asyncHandler } from '../middleware/errorHandler';
+import { validateRequest, validateChatRequest } from '../middleware/validation';
+import { successResponse } from '../utils/response';
+import { ValidationError } from '../utils/errors';
+import { logger } from '../utils/logger';
 
 const router = Router();
 
@@ -8,27 +13,28 @@ interface ChatRequest {
   documentId?: string;
 }
 
-router.post('/', async (req: Request<{}, {}, ChatRequest>, res: Response) => {
-  try {
+router.post('/', 
+  validateRequest(validateChatRequest),
+  asyncHandler(async (req: Request<{}, {}, ChatRequest>, res: Response) => {
     const { question, documentId } = req.body;
 
-    if (!question) {
-      return res.status(400).json({ error: 'Question is required' });
+    if (!question || question.trim().length === 0) {
+      throw new ValidationError('Question is required');
     }
 
-    // Get answer using RAG
-    const answer = await ragService.query(question, documentId);
+    logger.info('Processing chat query', { questionLength: question.length, documentId });
 
-    res.json({
-      success: true,
-      question,
+    // Get answer using RAG
+    const answer = await ragService.query(question.trim(), documentId);
+
+    logger.info('Chat query processed successfully', { questionLength: question.length });
+
+    return successResponse(res, {
+      question: question.trim(),
       answer,
     });
-  } catch (error) {
-    console.error('Chat error:', error);
-    res.status(500).json({ error: 'Failed to process question' });
-  }
-});
+  })
+);
 
 export default router;
 

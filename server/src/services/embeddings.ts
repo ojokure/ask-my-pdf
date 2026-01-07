@@ -1,19 +1,17 @@
 import { OpenAIEmbeddings } from '@langchain/openai';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import { config } from '../config';
+import { logger } from '../utils/logger';
 
 class EmbeddingsService {
   private embeddings: OpenAIEmbeddings;
 
   constructor() {
-    const apiKey = process.env.OPENAI_API_KEY?.trim();
-    if (!apiKey) {
+    if (!config.openaiApiKey) {
       throw new Error('OPENAI_API_KEY is not set in environment variables');
     }
 
     this.embeddings = new OpenAIEmbeddings({
-      openAIApiKey: apiKey,
+      openAIApiKey: config.openaiApiKey,
       modelName: 'text-embedding-ada-002',
     });
   }
@@ -23,7 +21,7 @@ class EmbeddingsService {
       const result = await this.embeddings.embedQuery(text);
       return result;
     } catch (error) {
-      console.error('Error generating embedding:', error);
+      logger.error('Error generating embedding', { error });
       throw new Error('Failed to generate embedding');
     }
   }
@@ -33,7 +31,7 @@ class EmbeddingsService {
       const results = await this.embeddings.embedDocuments(texts);
       return results;
     } catch (error) {
-      console.error('Error generating embeddings:', error);
+      logger.error('Error generating embeddings', { error, count: texts.length });
       throw new Error('Failed to generate embeddings');
     }
   }
