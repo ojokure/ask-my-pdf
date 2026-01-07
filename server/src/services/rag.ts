@@ -1,22 +1,20 @@
 import { ChatOpenAI } from '@langchain/openai';
 import { PromptTemplate } from '@langchain/core/prompts';
 import { vectorStore } from './vectorStore';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import { config } from '../config';
+import { logger } from '../utils/logger';
 
 class RAGService {
   private llm: ChatOpenAI;
   private promptTemplate: PromptTemplate;
 
   constructor() {
-    const apiKey = process.env.OPENAI_API_KEY?.trim();
-    if (!apiKey) {
+    if (!config.openaiApiKey) {
       throw new Error('OPENAI_API_KEY is not set in environment variables');
     }
 
     this.llm = new ChatOpenAI({
-      openAIApiKey: apiKey,
+      openAIApiKey: config.openaiApiKey,
       modelName: 'gpt-3.5-turbo',
       temperature: 0.7,
     });
@@ -61,9 +59,10 @@ Please provide a detailed answer based on the context provided. If the context d
       // Get answer from LLM
       const response = await this.llm.invoke(prompt);
       
+      logger.debug('RAG query completed', { questionLength: question.length, answerLength: (response.content as string).length });
       return response.content as string;
     } catch (error) {
-      console.error('Error in RAG query:', error);
+      logger.error('Error in RAG query', { error, question: question.substring(0, 50) });
       throw new Error('Failed to process RAG query');
     }
   }

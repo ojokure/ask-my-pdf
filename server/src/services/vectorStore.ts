@@ -4,9 +4,9 @@ import { Document } from 'langchain/document';
 import path from 'path';
 import fs from 'fs';
 import { pdfLoader } from './pdfLoader';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import { config } from '../config';
+import { logger } from '../utils/logger';
+import { OpenAIQuotaError } from '../utils/errors';
 
 class VectorStoreService {
   private storePath: string;
@@ -15,21 +15,21 @@ class VectorStoreService {
   private embeddings: OpenAIEmbeddings;
 
   constructor() {
-    const apiKey = process.env.OPENAI_API_KEY?.trim();
-    if (!apiKey) {
+    if (!config.openaiApiKey) {
       throw new Error('OPENAI_API_KEY is not set in environment variables');
     }
 
-    this.storePath = process.env.VECTOR_STORE_PATH || './vector_store';
-    this.indexName = process.env.VECTOR_STORE_INDEX_NAME || 'documents';
+    this.storePath = config.vectorStorePath;
+    this.indexName = config.vectorStoreIndexName;
     
     // Ensure vector store directory exists
     if (!fs.existsSync(this.storePath)) {
       fs.mkdirSync(this.storePath, { recursive: true });
+      logger.info('Created vector store directory', { path: this.storePath });
     }
 
     this.embeddings = new OpenAIEmbeddings({
-      openAIApiKey: apiKey,
+      openAIApiKey: config.openaiApiKey,
       modelName: 'text-embedding-ada-002',
     });
   }
@@ -46,9 +46,7 @@ class VectorStoreService {
         return;
       }
     } catch (error) {
-      console.error('Error initializing vector store:', error);
-      console.error('API Key present:', !!process.env.OPENAI_API_KEY);
-      console.error('API Key length:', process.env.OPENAI_API_KEY?.length || 0);
+      logger.error('Error initializing vector store', { error });
       throw new Error('Failed to initialize vector store');
     }
   }
@@ -93,17 +91,14 @@ class VectorStoreService {
       // Save the updated vector store
       await this.vectorStore.save(indexPath);
 
+      logger.info('Document added to vector store', { documentId, chunksCount: documents.length });
       return documentId;
     } catch (error: any) {
-      console.error('Error adding document to vector store:', error);
+      logger.error('Error adding document to vector store', { error: error.message, documentId });
       
-      // Provide more helpful error messages
-      if (error?.message?.includes('quota') || error?.message?.includes('429')) {
-        throw new Error('OpenAI API quota exceeded. Please check your OpenAI account billing and quota limits. You may need to upgrade your plan or wait for your quota to reset.');
-      }
-      
-      if (error?.message?.includes('InsufficientQuotaError')) {
-        throw new Error('OpenAI API quota exceeded. Please check your OpenAI account billing and quota limits.');
+      // Handle OpenAI quota errors
+      if (error?.message?.includes('quota') || error?.message?.includes('429') || error?.message?.includes('InsufficientQuotaError')) {
+        throw new OpenAIQuotaError();
       }
       
       throw new Error(`Failed to add document to vector store: ${error?.message || 'Unknown error'}`);
@@ -132,7 +127,7 @@ class VectorStoreService {
 
       return results;
     } catch (error) {
-      console.error('Error performing similarity search:', error);
+      logger.error('Error performing similarity search', { error, query: query.substring(0, 50) });
       throw new Error('Failed to perform similarity search');
     }
   }

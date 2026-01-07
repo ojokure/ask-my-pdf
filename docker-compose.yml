@@ -28,7 +28,7 @@ services:
     depends_on:
       - server
     environment:
-      - REACT_APP_API_URL=http://localhost:3001
+      - NEXT_PUBLIC_API_URL=http://server:3001
       - NODE_ENV=production
     restart: unless-stopped
 
