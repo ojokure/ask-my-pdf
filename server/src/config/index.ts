@@ -24,6 +24,13 @@ export const config = {
   
   // Logging
   logLevel: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug'),
+  
+  // Redis
+  redisHost: process.env.REDIS_HOST || 'localhost',
+  redisPort: parseInt(process.env.REDIS_PORT || '6379', 10),
+  redisPassword: process.env.REDIS_PASSWORD || undefined,
+  redisDb: parseInt(process.env.REDIS_DB || '0', 10),
+  idempotencyTtl: parseInt(process.env.IDEMPOTENCY_TTL || '3600', 10), // 1 hour default
 } as const;
 
 // Validate required configuration

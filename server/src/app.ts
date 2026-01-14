@@ -4,6 +4,7 @@ import uploadRoutes from './routes/upload';
 import chatRoutes from './routes/chat';
 import { errorHandler } from './middleware/errorHandler';
 import { generalLimiter, uploadLimiter, chatLimiter } from './middleware/rateLimiter';
+import { idempotencyMiddleware } from './middleware/idempotency';
 import { config } from './config';
 import { logger } from './utils/logger';
 
@@ -19,6 +20,9 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Rate limiting
 app.use(generalLimiter);
+
+// Idempotency middleware for POST/PUT/PATCH requests
+app.use(idempotencyMiddleware());
 
 // Routes with specific rate limits
 app.use('/api/upload', uploadLimiter, uploadRoutes);

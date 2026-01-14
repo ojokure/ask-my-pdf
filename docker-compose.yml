@@ -11,11 +11,14 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3001
+      - REDIS_HOST=redis
     volumes:
       - ./server/vector_store:/app/vector_store
       - ./server/uploads:/app/uploads
     env_file:
       - ./server/.env
+    depends_on:
+      - redis
     restart: unless-stopped
 
   client:
@@ -32,7 +35,18 @@ services:
       - NODE_ENV=production
     restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    container_name: askmypdf-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
 volumes:
   vector_store:
   uploads:
+  redis_data:
 
